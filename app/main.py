@@ -22,7 +22,12 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.petcare = build_state()
+    # A failed start must not take the whole function down: log it, and let the
+    # first request try again (get_state) so the error shows in the host's logs.
+    try:
+        app.state.petcare = build_state()
+    except Exception:  # pragma: no cover - only on a broken host
+        logging.getLogger("petcare").exception("Startup failed; will retry on the first request")
     yield
 
 

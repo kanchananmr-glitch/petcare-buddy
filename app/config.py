@@ -16,7 +16,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 # Serverless hosts (Vercel) only allow writes under /tmp; the index and the bookings
 # database go there. Elsewhere they stay in data/.
-WRITABLE_DIR = Path("/tmp/petcare") if os.getenv("VERCEL") else DATA_DIR
+def _writable_dir() -> Path:
+    serverless = os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+    if not serverless and os.access(DATA_DIR, os.W_OK):
+        return DATA_DIR
+    import tempfile
+
+    return Path(tempfile.gettempdir()) / "petcare"
+
+
+WRITABLE_DIR = _writable_dir()
 
 
 def _bool(name: str, default: bool) -> bool:
