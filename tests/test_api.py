@@ -151,3 +151,20 @@ def test_short_follow_up_always_searches_the_question_itself(client, fake_llm):
     assert r.status_code == 200
     assert queries[0] == "ร้านเปิดกี่โมง"
     assert len(queries) == 2 and "ส่วนลด" in queries[1]
+
+
+def test_state_builds_on_first_request_without_lifespan():
+    """Serverless hosts may skip ASGI lifespan events; the first request must still work."""
+    from fastapi.testclient import TestClient as _TC
+
+    from app.main import app as _app
+
+    saved = getattr(_app.state, "petcare", None)
+    if hasattr(_app.state, "petcare"):
+        del _app.state.petcare
+    try:
+        r = _TC(_app).get("/health")  # no "with": lifespan does not run
+        assert r.status_code == 200 and r.json()["status"] == "ok"
+    finally:
+        if saved is not None:
+            _app.state.petcare = saved

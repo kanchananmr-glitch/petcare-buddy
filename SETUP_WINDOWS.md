@@ -42,12 +42,12 @@ python -m venv .venv
 
 ```
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ขั้นนี้ใช้เวลาประมาณ 5–15 นาที เพราะต้องดาวน์โหลด PyTorch
 
-> ถ้าเคยติดตั้งเวอร์ชันก่อนหน้าแล้ว ให้รัน `pip install -r requirements.txt` อีกครั้ง เพื่อติดตั้งแพ็กเกจ `tzdata` (ข้อมูลเขตเวลาที่ Windows ไม่มีให้ ถ้าขาดตัวนี้ การส่งคำขอจองคิวจะ error)
+> ถ้าเคยติดตั้งเวอร์ชันก่อนหน้าแล้ว ให้รัน `pip install -r requirements-dev.txt` อีกครั้ง เพื่อติดตั้งแพ็กเกจ `tzdata` (ข้อมูลเขตเวลาที่ Windows ไม่มีให้ ถ้าขาดตัวนี้ การส่งคำขอจองคิวจะ error)
 
 ## 5. ตั้งค่า API key และรหัสพนักงาน (ทำครั้งเดียว)
 

@@ -1,0 +1,7 @@
+# Local development on a laptop: everything in requirements.txt plus the multilingual
+# embedding model (downloads PyTorch, several GB), the Anthropic SDK and pytest.
+-r requirements.txt
+uvicorn[standard]>=0.30
+sentence-transformers>=3.0   # paraphrase-multilingual-MiniLM-L12-v2 (used for the reported test results)
+anthropic>=0.40              # only when LLM_PROVIDER=anthropic
+pytest>=8.0

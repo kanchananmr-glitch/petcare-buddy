@@ -11,8 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Dependencies first, so code changes do not reinstall them.
-COPY requirements-deploy.txt .
-RUN pip install -r requirements-deploy.txt
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
 # Only what the server needs at runtime (no tests, docs, .env or local databases - see .dockerignore).
 COPY app ./app

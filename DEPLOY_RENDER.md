@@ -4,10 +4,10 @@
 
 | สิ่งที่ใช้ | ไฟล์ในโปรเจกต์ |
 |---|---|
-| Docker image | `Dockerfile`, `.dockerignore`, `requirements-deploy.txt` |
+| Docker image | `Dockerfile`, `.dockerignore`, `requirements.txt` |
 | ตั้งค่า Render อัตโนมัติ (Blueprint) | `render.yaml` |
 
-ทดสอบก่อน deploy (16 ต.ค. 2569): ติดตั้งเฉพาะ `requirements-deploy.txt` บน Python 3.12 แล้วรันด้วยคำสั่งเดียวกับใน Dockerfile ได้ผล `/health` ตอบ ok หน้าเว็บทั้ง 4 หน้าและ API ตอบ 200 เริ่มระบบใช้เวลาราว 1 วินาที ใช้หน่วยความจำราว 160 MB (แผนฟรีให้ 512 MB)
+ทดสอบก่อน deploy (16 ต.ค. 2569): ติดตั้งเฉพาะ `requirements.txt` บน Python 3.12 แล้วรันด้วยคำสั่งเดียวกับใน Dockerfile ได้ผล `/health` ตอบ ok หน้าเว็บทั้ง 4 หน้าและ API ตอบ 200 เริ่มระบบใช้เวลาราว 1 วินาที ใช้หน่วยความจำราว 160 MB (แผนฟรีให้ 512 MB)
 
 ## ขั้นที่ 1 สร้าง GitHub repo เปล่า (ทำเอง ครั้งเดียว)
 

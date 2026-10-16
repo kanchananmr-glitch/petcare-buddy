@@ -1,0 +1,15 @@
+# Not needed by the server (keeps the function small)
+.env
+.env.*
+*.db
+data/index/
+tests/
+docs/
+scripts/
+.venv/
+venv/
+__pycache__/
+*.zip
+*.command
+Dockerfile
+render.yaml

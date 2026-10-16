@@ -22,7 +22,7 @@ Requires Python 3.10+.
 cd PetCare_Buddy
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt          # first install downloads PyTorch for sentence-transformers
+pip install -r requirements-dev.txt      # local: adds sentence-transformers (downloads PyTorch) and pytest
 cp .env.example .env                      # then put ONE API key in .env
 ```
 
@@ -162,8 +162,9 @@ docker build -t petcare-buddy .
 docker run -p 8000:8000 --env-file .env petcare-buddy
 ```
 
-The image installs `requirements-deploy.txt` (no sentence-transformers/torch) and uses the
-TF-IDF retriever, because the free plan has 512 MB RAM. The free plan sleeps after 15 minutes
+`requirements.txt` holds only the runtime packages (no sentence-transformers/torch), so the
+server uses the TF-IDF retriever: Render's free plan has 512 MB RAM and Vercel limits a Python
+function to 500 MB. Vercel: see [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md). The free plan sleeps after 15 minutes
 idle and its disk is temporary, so booking requests are lost on every redeploy or restart.
 
 ## 6. Limitations

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 from dataclasses import dataclass
 
@@ -77,5 +78,17 @@ def build_state(settings: Settings | None = None) -> AppState:
     return state
 
 
+_build_lock = threading.Lock()
+
+
 def get_state(request: Request) -> AppState:
-    return request.app.state.petcare
+    """The state is built at startup (lifespan). Hosts that skip ASGI lifespan events
+    (some serverless runtimes) build it on the first request instead."""
+    state = getattr(request.app.state, "petcare", None)
+    if state is None:
+        with _build_lock:
+            state = getattr(request.app.state, "petcare", None)
+            if state is None:
+                state = build_state()
+                request.app.state.petcare = state
+    return state

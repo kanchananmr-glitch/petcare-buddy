@@ -1,6 +1,12 @@
+# Runtime dependencies (used by Vercel, Render/Docker and any server).
+# Kept small on purpose: Vercel's Python functions are limited to 500 MB and Render's
+# free plan has 512 MB RAM. The server then uses its built-in TF-IDF retriever.
+# For local development with the multilingual embedding model and the test suite:
+#   pip install -r requirements-dev.txt
+
 # Web / API
 fastapi>=0.115
-uvicorn[standard]>=0.30
+uvicorn>=0.30
 python-multipart>=0.0.9
 pydantic>=2.7
 python-dotenv>=1.0
@@ -10,15 +16,10 @@ httpx>=0.27
 # RAG
 numpy>=1.26
 faiss-cpu>=1.8
-scikit-learn>=1.4            # TF-IDF fallback embedder
-sentence-transformers>=3.0   # multilingual embeddings (downloads the model on first run)
+scikit-learn>=1.4            # TF-IDF embedder
 
-# LLM providers (install both; choose with LLM_PROVIDER)
-anthropic>=0.40
+# LLM providers (OpenRouter and OpenAI use the openai package)
 openai>=1.50
 
 # Images
 pillow>=10.0
-
-# Tests
-pytest>=8.0

@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.routes import booking, cat, chat, services, vision
-from app.state import build_state
+from app.state import build_state, get_state
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 STATIC_DIR = Path(__file__).parent / "static"
@@ -73,7 +73,7 @@ def dashboard_page():
 
 @app.get("/health", tags=["system"])
 def health(request: Request):
-    s = request.app.state.petcare
+    s = get_state(request)
     return {
         "status": "ok",
         "knowledge_base": {

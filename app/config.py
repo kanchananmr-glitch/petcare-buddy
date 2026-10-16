@@ -14,6 +14,9 @@ except ImportError:  # pragma: no cover
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
+# Serverless hosts (Vercel) only allow writes under /tmp; the index and the bookings
+# database go there. Elsewhere they stay in data/.
+WRITABLE_DIR = Path("/tmp/petcare") if os.getenv("VERCEL") else DATA_DIR
 
 
 def _bool(name: str, default: bool) -> bool:
@@ -95,13 +98,13 @@ def get_settings() -> Settings:
             "EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         ),
         top_k=int(os.getenv("RAG_TOP_K", "5")),
-        index_dir=Path(os.getenv("INDEX_DIR", str(DATA_DIR / "index"))),
+        index_dir=Path(os.getenv("INDEX_DIR", str(WRITABLE_DIR / "index"))),
         knowledge_path=Path(os.getenv("KNOWLEDGE_PATH", str(DATA_DIR / "knowledge.json"))),
         drafts_path=Path(os.getenv("DRAFTS_PATH", str(DATA_DIR / "knowledge_draft_additions.json"))),
         rules_path=Path(os.getenv("RULES_PATH", str(DATA_DIR / "chatbot_rules.json"))),
         include_drafts=_bool("KB_INCLUDE_DRAFTS", False),
         cat_pricing_path=Path(os.getenv("CAT_PRICING_PATH", str(DATA_DIR / "cat_pricing.json"))),
-        bookings_db=Path(os.getenv("BOOKINGS_DB", str(DATA_DIR / "bookings.db"))),
+        bookings_db=Path(os.getenv("BOOKINGS_DB", str(WRITABLE_DIR / "bookings.db"))),
         admin_token=os.getenv("ADMIN_TOKEN") or None,
         timezone=os.getenv("STORE_TIMEZONE", "Asia/Bangkok"),
         slot_capacity=max(1, int(os.getenv("BOOKING_SLOT_CAPACITY", "1"))),
