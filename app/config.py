@@ -28,6 +28,26 @@ def _writable_dir() -> Path:
 WRITABLE_DIR = _writable_dir()
 
 
+def _can_write(directory: Path) -> bool:
+    """True if files can be created in `directory` (or in its nearest existing parent)."""
+    d = directory
+    while not d.exists() and d != d.parent:
+        d = d.parent
+    return os.access(d, os.W_OK)
+
+
+def _writable_path(env_name: str, name: str) -> Path:
+    """Path from the environment if it can be written, otherwise WRITABLE_DIR/name.
+    A copied .env (e.g. BOOKINGS_DB=data/bookings.db) must not break a read-only host."""
+    configured = os.getenv(env_name)
+    default = WRITABLE_DIR / name
+    if not configured:
+        return default
+    path = Path(configured)
+    target_dir = path if name == "index" else path.parent
+    return path if _can_write(target_dir) else default
+
+
 def _bool(name: str, default: bool) -> bool:
     value = os.getenv(name)
     if value is None:
@@ -107,13 +127,13 @@ def get_settings() -> Settings:
             "EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         ),
         top_k=int(os.getenv("RAG_TOP_K", "5")),
-        index_dir=Path(os.getenv("INDEX_DIR", str(WRITABLE_DIR / "index"))),
+        index_dir=_writable_path("INDEX_DIR", "index"),
         knowledge_path=Path(os.getenv("KNOWLEDGE_PATH", str(DATA_DIR / "knowledge.json"))),
         drafts_path=Path(os.getenv("DRAFTS_PATH", str(DATA_DIR / "knowledge_draft_additions.json"))),
         rules_path=Path(os.getenv("RULES_PATH", str(DATA_DIR / "chatbot_rules.json"))),
         include_drafts=_bool("KB_INCLUDE_DRAFTS", False),
         cat_pricing_path=Path(os.getenv("CAT_PRICING_PATH", str(DATA_DIR / "cat_pricing.json"))),
-        bookings_db=Path(os.getenv("BOOKINGS_DB", str(WRITABLE_DIR / "bookings.db"))),
+        bookings_db=_writable_path("BOOKINGS_DB", "bookings.db"),
         admin_token=os.getenv("ADMIN_TOKEN") or None,
         timezone=os.getenv("STORE_TIMEZONE", "Asia/Bangkok"),
         slot_capacity=max(1, int(os.getenv("BOOKING_SLOT_CAPACITY", "1"))),
