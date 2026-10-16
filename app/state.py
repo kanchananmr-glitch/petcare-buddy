@@ -7,7 +7,7 @@ import threading
 import time
 from dataclasses import dataclass
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 
 from app.booking import BookingStore
 from app.cat_estimate import CatPricing, knowledge_text, load_cat_pricing, price_numbers
@@ -89,6 +89,19 @@ def get_state(request: Request) -> AppState:
         with _build_lock:
             state = getattr(request.app.state, "petcare", None)
             if state is None:
-                state = build_state()
+                try:
+                    state = build_state()
+                except Exception as exc:
+                    log.exception("Could not build the app state")
+                    # Show the cause (type and message only, no traceback) instead of a bare 500,
+                    # so a failed cloud start can be diagnosed from the browser.
+                    raise HTTPException(
+                        status_code=503,
+                        detail={
+                            "code": "startup_failed",
+                            "message": "ระบบยังไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้ง",
+                            "error": f"{type(exc).__name__}: {exc}"[:500],
+                        },
+                    ) from exc
                 request.app.state.petcare = state
     return state

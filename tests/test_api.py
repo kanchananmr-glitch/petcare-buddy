@@ -168,3 +168,26 @@ def test_state_builds_on_first_request_without_lifespan():
     finally:
         if saved is not None:
             _app.state.petcare = saved
+
+
+def test_failed_start_returns_503_with_the_cause(monkeypatch):
+    from fastapi.testclient import TestClient as _TC
+
+    import app.state as state_mod
+    from app.main import app as _app
+
+    def boom():
+        raise FileNotFoundError("data/knowledge.json")
+
+    saved = getattr(_app.state, "petcare", None)
+    if hasattr(_app.state, "petcare"):
+        del _app.state.petcare
+    monkeypatch.setattr(state_mod, "build_state", boom)
+    try:
+        r = _TC(_app).get("/health")
+        assert r.status_code == 503
+        assert r.json()["detail"]["code"] == "startup_failed"
+        assert "FileNotFoundError" in r.json()["detail"]["error"]
+    finally:
+        if saved is not None:
+            _app.state.petcare = saved
