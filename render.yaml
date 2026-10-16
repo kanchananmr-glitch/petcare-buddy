@@ -1,0 +1,26 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repository.
+# Builds the Dockerfile and runs one free web service. See DEPLOY_RENDER.md.
+services:
+  - type: web
+    name: petcare-buddy
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_MODEL
+        value: openai/gpt-4o-mini
+      - key: OPENROUTER_API_KEY
+        sync: false          # Render asks for it when the Blueprint is created; never commit it
+      - key: ADMIN_TOKEN
+        generateValue: true  # Render creates a random staff password; read it in the Environment tab
+      - key: EMBEDDING_BACKEND
+        value: tfidf         # the free plan's 512 MB RAM cannot hold sentence-transformers + torch
+      - key: STORE_TIMEZONE
+        value: Asia/Bangkok
+      - key: BOOKING_SLOT_CAPACITY
+        value: "1"

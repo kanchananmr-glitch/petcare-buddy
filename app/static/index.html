@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PetCare Buddy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" class="mark-bg"/>
+          <ellipse cx="24" cy="29" rx="8.5" ry="7" class="mark-paw"/>
+          <ellipse cx="14.5" cy="20" rx="3.6" ry="4.6" class="mark-paw"/>
+          <ellipse cx="20.5" cy="14.5" rx="3.6" ry="4.6" class="mark-paw"/>
+          <ellipse cx="27.5" cy="14.5" rx="3.6" ry="4.6" class="mark-paw"/>
+          <ellipse cx="33.5" cy="20" rx="3.6" ry="4.6" class="mark-paw"/>
+        </svg>
+        <div>
+          <h1>PetCare Buddy</h1>
+          <p class="subtitle">ผู้ช่วยตอบคำถามร้าน PetCare Grooming</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span id="status" class="status warn" role="status" hidden></span>
+        <a id="shopLink" class="ghost-btn shop-link" href="/static/PetCare_main.html" title="ไปที่หน้าร้าน PetCare">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5 5.5 4h13L20 9.5M4 9.5h16M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0M5.5 12.5V20h13v-7.5M10 20v-4.5h4V20"/></svg>
+          <span>หน้าร้าน</span>
+        </a>
+        <button id="bookBtn" class="book-btn" type="button" title="ส่งคำขอจองคิว หรือตรวจสถานะการจอง">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4"/></svg>
+          <span>จองคิว</span>
+        </button>
+        <button id="clearBtn" class="ghost-btn" type="button" title="เริ่มบทสนทนาใหม่">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13" /></svg>
+          <span>ล้างแชท</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="chat" class="chat" aria-live="polite" aria-label="บทสนทนา"></main>
+
+    <section class="composer-wrap">
+      <div id="suggestions" class="suggestions" aria-label="คำถามแนะนำ"></div>
+      <div id="errorBox" class="error-box" role="alert" hidden>
+        <span id="errorText"></span>
+        <button id="retryBtn" type="button" class="link-btn" hidden>ส่งอีกครั้ง</button>
+        <button id="dismissError" type="button" class="link-btn" aria-label="ปิดข้อความแจ้งเตือน">ปิด</button>
+      </div>
+      <div id="imagePreview" class="image-preview" hidden>
+        <img id="previewImg" alt="รูปที่เลือก">
+        <span id="previewName"></span>
+        <span id="previewMode" class="preview-mode" hidden>ประเมินขนาดและราคาแมว</span>
+        <button id="removeImage" type="button" class="link-btn">นำรูปออก</button>
+      </div>
+      <form id="composer" class="composer" autocomplete="off">
+        <label class="icon-btn" title="แนบรูปภาพ (JPG, PNG, WEBP ไม่เกิน 5 MB)">
+          <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
+          <span class="sr-only">แนบรูปภาพ</span>
+        </label>
+        <textarea id="input" rows="1" maxlength="1000" placeholder="พิมพ์คำถาม เช่น อาบน้ำแมวราคาเท่าไหร่" aria-label="ข้อความ"></textarea>
+        <button id="sendBtn" class="send-btn" type="submit">
+          <span>ส่ง</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m-5-6 6 6-6 6"/></svg>
+        </button>
+      </form>
+      <p class="footnote">ข้อมูลร้านเป็นข้อมูลจำลองเพื่อการศึกษา แชทบอทไม่สามารถยืนยันคิว รับชำระเงิน หรือวินิจฉัยโรคได้</p>
+    </section>
+  </div>
+
+
+  <dialog id="bookingDialog" class="booking" aria-labelledby="bookingTitle">
+    <div class="booking-head">
+      <h2 id="bookingTitle">จองคิว</h2>
+      <button type="button" class="icon-close" id="closeBooking" aria-label="ปิด">×</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabNew" class="tab" aria-selected="true" aria-controls="panelNew">จองคิวใหม่</button>
+      <button type="button" role="tab" id="tabStatus" class="tab" aria-selected="false" aria-controls="panelStatus">ตรวจสถานะ / ยกเลิก</button>
+    </div>
+
+    <form id="panelNew" class="booking-form" role="tabpanel" aria-labelledby="tabNew" novalidate>
+      <p class="hint">คำขอจะได้รับการยืนยันคิวเมื่อพนักงานตรวจสอบแล้ว ชำระเงินที่ร้านหลังรับบริการ</p>
+      <fieldset class="pet-type">
+        <legend>สัตว์เลี้ยง</legend>
+        <label><input type="radio" name="pet_type" value="สุนัข" checked> สุนัข</label>
+        <label><input type="radio" name="pet_type" value="แมว"> แมว</label>
+      </fieldset>
+      <div class="row">
+        <label>ชื่อสัตว์เลี้ยง (ไม่บังคับ)
+          <input name="pet_name" maxlength="50" autocomplete="off">
+        </label>
+        <label>น้ำหนัก (กก.)
+          <input name="weight_kg" type="number" min="0.1" max="100" step="0.1" inputmode="decimal">
+        </label>
+      </div>
+      <fieldset id="catBox" class="cat-box" hidden>
+        <legend>ประเมินขนาดแมวจากรูป <span class="opt">(ไม่บังคับ)</span></legend>
+        <p class="hint">แนบรูปน้องแมวที่เห็นทั้งตัว ระบบจะประเมินขนาด น้ำหนัก และขนสั้น/ขนยาว แล้วคิดราคาประมาณการให้ หรือเลือกเองด้านล่างก็ได้</p>
+        <label class="cat-upload">
+          <input id="catFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
+          <span id="catUploadLabel">แนบรูปแมว</span>
+        </label>
+        <div id="catResult" class="cat-result" aria-live="polite" hidden></div>
+        <div class="row">
+          <label>ขนาดแมว
+            <select name="cat_size"><option value="">ไม่ระบุ (ใช้น้ำหนัก)</option></select>
+          </label>
+          <label>ลักษณะขน
+            <select name="coat_length">
+              <option value="">ไม่ระบุ</option>
+              <option value="ขนสั้น">ขนสั้น</option>
+              <option value="ขนยาว">ขนยาว</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>บริการ <span class="opt">(เลือกได้ไม่เกิน 4)</span></legend>
+        <div id="serviceList" class="service-list"></div>
+      </fieldset>
+      <div class="row">
+        <label>วันที่ <input name="date" type="date" required></label>
+        <label><span>เวลา <span class="opt" id="hoursHint">(เริ่มนัดได้ทุก 1 ชั่วโมง 09:00–18:00 น.)</span></span>
+          <select name="time" required><option value="">เลือกเวลา</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label>ชื่อผู้ติดต่อ <input name="contact_name" maxlength="60" autocomplete="name" required></label>
+        <label>เบอร์โทรหรือ LINE ID <input name="contact" maxlength="60" autocomplete="tel" required></label>
+      </div>
+      <label>หมายเหตุถึงพนักงาน <span class="opt">(ไม่บังคับ)</span>
+        <textarea name="note" rows="2" maxlength="300"></textarea>
+      </label>
+      <div id="estimate" class="estimate" aria-live="polite"></div>
+      <div id="bookingError" class="form-error" role="alert" hidden></div>
+      <button type="submit" class="send-btn wide" id="submitBooking">ส่งคำขอจอง</button>
+    </form>
+
+    <form id="panelStatus" class="booking-form" role="tabpanel" aria-labelledby="tabStatus" hidden novalidate>
+      <p class="hint">กรอกหมายเลขคำขอ (เช่น PET-BOOK-1710202601) และเบอร์โทรหรือ LINE ID ที่ใช้ตอนจอง</p>
+      <div class="row">
+        <label>หมายเลขคำขอ <input name="booking_id" maxlength="20" autocomplete="off" required></label>
+        <label>เบอร์โทรหรือ LINE ID <input name="contact" maxlength="60" required></label>
+      </div>
+      <div id="statusError" class="form-error" role="alert" hidden></div>
+      <button type="submit" class="send-btn wide">ตรวจสถานะ</button>
+      <div id="statusResult" class="status-card" hidden></div>
+    </form>
+  </dialog>
+
+  <template id="typingTpl">
+    <div class="msg bot typing" aria-label="กำลังประมวลผล">
+      <div class="bubble">
+        <span class="paw-dot"></span><span class="paw-dot"></span><span class="paw-dot"></span>
+        <span class="typing-label">กำลังค้นข้อมูลร้านและเรียบเรียงคำตอบ…</span>
+      </div>
+    </div>
+  </template>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

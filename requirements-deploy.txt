@@ -1,0 +1,25 @@
+# Runtime dependencies for the cloud deployment (Docker on Render, free plan).
+# Same as requirements.txt minus sentence-transformers (torch alone needs more than the
+# free plan's 512 MB RAM) and pytest. The app then uses its built-in TF-IDF retriever
+# (EMBEDDING_BACKEND=tfidf), which is what the test suite runs without the model.
+
+# Web / API
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pydantic>=2.7
+python-dotenv>=1.0
+tzdata>=2024.1
+httpx>=0.27
+
+# RAG
+numpy>=1.26
+faiss-cpu>=1.8
+scikit-learn>=1.4
+
+# LLM providers
+anthropic>=0.40
+openai>=1.50
+
+# Images
+pillow>=10.0

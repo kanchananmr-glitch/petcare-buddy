@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>คำขอจองคิว · PetCare Buddy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body { background: var(--paper); }
+    .admin { max-width: 1040px; margin: 0 auto; padding: 20px 16px 40px; }
+    .admin h1 { font-family: var(--font-brand); font-weight: 500; font-size: 1.5rem; margin: 0 0 4px; }
+    .admin .sub { color: var(--ink-soft); margin: 0 0 16px; font-size: .9rem; }
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 14px; }
+    .bar label { display: flex; flex-direction: column; gap: 4px; font-size: .88rem; }
+    .bar input, .bar select { font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: #fff; }
+    .bar button { height: 38px; }
+    .err { background: var(--danger-bg); color: var(--danger); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; font-size: .88rem; }
+    th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+    th { background: var(--sky); font-weight: 600; }
+    td .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .ok-btn { border: none; background: var(--mint-deep); color: #fff; border-radius: 999px; padding: 5px 12px; font: inherit; font-size: .84rem; cursor: pointer; }
+    .no-btn { border: 1px solid var(--danger); background: #fff; color: var(--danger); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: .84rem; cursor: pointer; }
+    .pill { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: .8rem; font-weight: 600; background: var(--warn-bg); color: #7a5300; white-space: nowrap; }
+    .pill.confirmed { background: var(--mint); color: var(--mint-deep); }
+    .pill.rejected, .pill.cancelled { background: var(--danger-bg); color: var(--danger); }
+    .empty { padding: 24px; text-align: center; color: var(--ink-soft); }
+    @media (max-width: 760px) {
+      table, thead, tbody, tr, th, td { display: block; }
+      thead { display: none; }
+      tr { border-bottom: 2px solid var(--line); }
+      td { border: none; padding: 4px 12px; }
+      td::before { content: attr(data-label) ": "; color: var(--ink-soft); }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin">
+    <h1>คำขอจองคิว</h1>
+    <p class="sub"><a href="/dashboard">ดู Dashboard ภาพรวมการจองคิว →</a></p>
+    <p class="sub">สำหรับพนักงานร้าน PetCare Grooming · ยืนยันหรือปฏิเสธคำขอหลังตรวจสอบคิวจริง ลูกค้าจะเห็นสถานะที่หน้า "ตรวจสถานะ"</p>
+
+    <form id="bar" class="bar">
+      <label>รหัสพนักงาน (ADMIN_TOKEN)
+        <input id="token" type="password" autocomplete="current-password" required>
+      </label>
+      <label>สถานะ
+        <select id="filter">
+          <option value="pending">รอพนักงานยืนยัน</option>
+          <option value="confirmed">ยืนยันแล้ว</option>
+          <option value="rejected">ปฏิเสธแล้ว</option>
+          <option value="cancelled">ลูกค้ายกเลิก</option>
+          <option value="">ทั้งหมด</option>
+        </select>
+      </label>
+      <button class="send-btn" type="submit">โหลดรายการ</button>
+    </form>
+    <div id="err" class="err" role="alert" hidden></div>
+    <div id="list"></div>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const KEY = "petcare-admin-token";
+    try { $("token").value = sessionStorage.getItem(KEY) || ""; } catch (_) {}
+
+    function el(tag, cls, text) {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined && text !== null) n.textContent = text;
+      return n;
+    }
+    function showErr(msg) { $("err").textContent = msg; $("err").hidden = false; }
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, {
+        ...opts,
+        headers: { "Content-Type": "application/json", "X-Admin-Token": $("token").value, ...(opts.headers || {}) },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail?.message || `HTTP ${res.status}`);
+      return data;
+    }
+
+    async function load() {
+      $("err").hidden = true;
+      try { sessionStorage.setItem(KEY, $("token").value); } catch (_) {}
+      const status = $("filter").value;
+      try {
+        const data = await api(`/api/admin/bookings${status ? `?status=${status}` : ""}`);
+        render(data.bookings);
+      } catch (e) { showErr(e.message); $("list").innerHTML = ""; }
+    }
+
+    async function decide(id, status) {
+      const note = prompt(status === "confirmed"
+        ? "ข้อความถึงลูกค้า (ไม่บังคับ) เช่น เวลานัดที่ยืนยัน"
+        : "เหตุผลที่รับคิวไม่ได้ (แสดงให้ลูกค้าเห็น)", "");
+      if (note === null) return;
+      try {
+        await api(`/api/admin/bookings/${encodeURIComponent(id)}/status`, {
+          method: "POST", body: JSON.stringify({ status, staff_note: note || null }),
+        });
+        load();
+      } catch (e) { showErr(e.message); }
+    }
+
+    function render(rows) {
+      const box = $("list");
+      box.innerHTML = "";
+      if (!rows.length) { box.appendChild(el("div", "empty", "ไม่มีคำขอในสถานะนี้")); return; }
+      const table = el("table");
+      const head = el("thead");
+      const hr = el("tr");
+      ["หมายเลข", "วันเวลา", "สัตว์เลี้ยง", "บริการ", "ผู้ติดต่อ", "หมายเหตุ", "สถานะ", ""].forEach((h) => hr.appendChild(el("th", null, h)));
+      head.appendChild(hr);
+      table.appendChild(head);
+      const body = el("tbody");
+      rows.forEach((b) => {
+        const tr = el("tr");
+        const cell = (label, text) => { const td = el("td", null, text); td.dataset.label = label; tr.appendChild(td); return td; };
+        cell("หมายเลข", b.booking_id).style.whiteSpace = "nowrap";
+        cell("วันเวลา", `${b.date} ${b.time}`).style.whiteSpace = "nowrap";
+        cell("สัตว์เลี้ยง", [b.pet_type, b.pet_name, b.weight_kg ? `${b.weight_kg} กก.` : ""].filter(Boolean).join(" · "));
+        cell("บริการ", `${b.services.map((s) => s.name).join(", ")} (${b.estimated_total} บาท)`);
+        cell("ผู้ติดต่อ", `${b.contact_name} · ${b.contact}`);
+        cell("หมายเหตุ", [b.note, b.staff_note ? `ร้าน: ${b.staff_note}` : ""].filter(Boolean).join(" / "));
+        const st = cell("สถานะ", "");
+        st.appendChild(el("span", `pill ${b.status}`, b.status_label));
+        const act = cell("", "");
+        if (b.status === "pending" || b.status === "confirmed") {
+          const wrap = el("div", "actions");
+          if (b.status === "pending") {
+            const ok = el("button", "ok-btn", "ยืนยันคิว");
+            ok.type = "button";
+            ok.addEventListener("click", () => decide(b.booking_id, "confirmed"));
+            wrap.appendChild(ok);
+          }
+          const no = el("button", "no-btn", "ปฏิเสธ");
+          no.type = "button";
+          no.addEventListener("click", () => decide(b.booking_id, "rejected"));
+          wrap.appendChild(no);
+          act.appendChild(wrap);
+        }
+        body.appendChild(tr);
+      });
+      table.appendChild(body);
+      box.appendChild(table);
+    }
+
+    $("bar").addEventListener("submit", (e) => { e.preventDefault(); load(); });
+    $("filter").addEventListener("change", load);
+    if ($("token").value) load();
+  })();
+  </script>
+</body>
+</html>

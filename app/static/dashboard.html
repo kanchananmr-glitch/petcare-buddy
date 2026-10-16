@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard การจองคิว · PetCare Buddy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body { background: var(--paper); }
+    .dash { max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px; }
+    .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .dash h1 { font-family: var(--font-brand); font-weight: 500; font-size: 1.6rem; margin: 0; }
+    .dash h2 { font-family: var(--font-brand); font-weight: 500; font-size: 1.15rem; margin: 0 0 10px; }
+    .sub { color: var(--ink-soft); margin: 2px 0 16px; font-size: .9rem; }
+    .head a { color: var(--sky-deep); font-size: .9rem; }
+
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 16px; }
+    .bar label { display: flex; flex-direction: column; gap: 4px; font-size: .86rem; color: var(--ink-soft); }
+    .bar input, .bar select { font: inherit; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: #fff; }
+    .bar button { height: 40px; }
+    .updated { font-size: .8rem; color: var(--ink-soft); margin-left: auto; align-self: center; }
+    .err { background: var(--danger-bg); color: var(--danger); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; }
+
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi .label { font-size: .85rem; color: var(--ink-soft); }
+    .kpi .value { font-family: var(--font-brand); font-size: 2rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .kpi .note { font-size: .78rem; color: var(--ink-soft); }
+    .kpi .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+    .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+    /* per-day column chart: one series (active requests), click a day to open its schedule */
+    .chart { position: relative; display: flex; align-items: flex-end; gap: 6px; height: 190px; padding: 8px 4px 0; border-bottom: 1px solid var(--line); }
+    .col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; cursor: pointer; border-radius: 8px; padding: 0 2px; }
+    .col:hover, .col.sel { background: #f4f7f9; }
+    .col .num { font-size: .78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+    .col .fill { width: 100%; max-width: 34px; background: var(--mint-deep); border-radius: 4px 4px 0 0; min-height: 0; }
+    .col.sel .fill { background: var(--sky-deep); }
+    .xlabels { display: flex; gap: 6px; padding: 4px 4px 0; }
+    .xlabels span { flex: 1; min-width: 0; text-align: center; font-size: .72rem; color: var(--ink-soft); white-space: nowrap; overflow: hidden; }
+    .xlabels span.today { color: var(--ink); font-weight: 600; }
+    .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: .8rem; border-radius: 8px; padding: 6px 10px; white-space: nowrap; transform: translate(-50%, -100%); z-index: 2; }
+
+    .svc { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: .88rem; align-items: center; }
+    .svc .track { grid-column: 1 / -1; height: 6px; background: #eef1f4; border-radius: 3px; margin-bottom: 6px; }
+    .svc .track i { display: block; height: 100%; background: var(--mint-deep); border-radius: 3px; }
+    .svc b { font-variant-numeric: tabular-nums; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    th { background: var(--sky); font-weight: 600; white-space: nowrap; }
+    td.n { text-align: right; font-variant-numeric: tabular-nums; }
+    th.n { text-align: right; }
+    tr.day { cursor: pointer; }
+    tr.day:hover td { background: #f7fafc; }
+    tr.day.sel td { background: #eef5fb; }
+    tr.day.empty td { color: var(--ink-soft); }
+    .ids { display: flex; flex-wrap: wrap; gap: 4px; min-width: 300px; }
+    .tbl-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--line); }
+
+    .pill, .chip { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: .78rem; font-weight: 600; white-space: nowrap; background: var(--warn-bg); color: #7a5300; }
+    .pill.confirmed, .chip.confirmed { background: var(--mint); color: var(--mint-deep); }
+    .pill.rejected, .pill.cancelled, .chip.rejected, .chip.cancelled { background: var(--danger-bg); color: var(--danger); }
+    .chip { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 500; cursor: pointer; border: 0; }
+    .chip.cancelled, .chip.rejected { text-decoration: line-through; }
+
+    .sched-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .sched-head label { font-size: .86rem; color: var(--ink-soft); display: flex; gap: 6px; align-items: center; }
+    td.time { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    tr.free td { color: #a2acb8; padding-top: 4px; padding-bottom: 4px; }
+    tr.flash td { animation: flash 1.6s ease; }
+    @keyframes flash { from { background: #fff3d6; } to { background: transparent; } }
+    .muted { color: var(--ink-soft); }
+    .empty { padding: 20px; text-align: center; color: var(--ink-soft); }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: .8rem; color: var(--ink-soft); }
+    section { margin-bottom: 16px; }
+
+    @media (max-width: 760px) {
+      .sched table, .sched thead, .sched tbody, .sched tr, .sched th, .sched td { display: block; }
+      .sched thead { display: none; }
+      .sched tr { border-bottom: 2px solid var(--line); padding: 6px 0; }
+      .sched td { border: none; padding: 2px 12px; }
+      .sched td.n { text-align: left; }
+      .sched td[data-label]::before { content: attr(data-label) ": "; color: var(--ink-soft); }
+      .sched tr.free { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { tr.flash td { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="dash">
+    <div class="head">
+      <h1>Dashboard การจองคิว</h1>
+      <a href="/admin">← ไปหน้ายืนยัน/ปฏิเสธคำขอ</a>
+    </div>
+    <p class="sub">สำหรับพนักงานร้าน PetCare Grooming · ข้อมูลอ่านจากฐานข้อมูลการจอง (bookings.db) แบบสด</p>
+
+    <form id="bar" class="bar">
+      <label>รหัสพนักงาน (ADMIN_TOKEN)
+        <input id="token" type="password" autocomplete="current-password" required>
+      </label>
+      <label>เริ่มวันที่
+        <input id="start" type="date">
+      </label>
+      <label>ช่วงเวลา
+        <select id="days">
+          <option value="7">7 วัน</option>
+          <option value="14">14 วัน</option>
+          <option value="30">30 วัน</option>
+        </select>
+      </label>
+      <button class="send-btn" type="submit">โหลดข้อมูล</button>
+      <button id="todayBtn" class="ghost-btn" type="button">วันนี้</button>
+      <span id="updated" class="updated"></span>
+    </form>
+    <div id="err" class="err" role="alert" hidden></div>
+
+    <div id="content" hidden>
+      <div class="kpis" id="kpis"></div>
+
+      <div class="grid2">
+        <section class="card">
+          <h2>คิวต่อวัน <span class="muted" style="font-size:.85rem">(รอยืนยัน + ยืนยันแล้ว · คลิกวันเพื่อดูตารางนัด)</span></h2>
+          <div class="chart" id="chart" role="img"></div>
+          <div class="xlabels" id="xlabels" aria-hidden="true"></div>
+        </section>
+        <section class="card">
+          <h2>บริการที่ถูกจองในช่วงนี้</h2>
+          <div id="services"></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>สรุปรายวันและหมายเลขคำขอ</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>วันที่</th><th class="n">ทั้งหมด</th><th class="n">รอยืนยัน</th><th class="n">ยืนยันแล้ว</th><th class="n">ยกเลิก/ปฏิเสธ</th><th>หมายเลขคำขอ</th>
+            </tr></thead>
+            <tbody id="daysBody"></tbody>
+          </table>
+        </div>
+        <div class="legend" style="margin-top:8px">
+          <span class="chip pending">รอยืนยัน</span><span class="chip confirmed">ยืนยันแล้ว</span><span class="chip cancelled">ยกเลิก/ปฏิเสธ</span>
+        </div>
+      </section>
+
+      <section class="card sched">
+        <div class="sched-head">
+          <h2 id="schedTitle" style="margin:0">ตารางนัดหมาย</h2>
+          <label><input id="showFree" type="checkbox" checked> แสดงช่วงเวลาที่ว่าง</label>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>เวลา</th><th>หมายเลขคำขอ</th><th>สัตว์เลี้ยง</th><th>บริการ</th><th class="n">ราคาประมาณ</th><th>ผู้ติดต่อ</th><th>หมายเหตุ</th><th>สถานะ</th>
+            </tr></thead>
+            <tbody id="schedBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const KEY = "petcare-admin-token";        // shared with /admin
+    const VIEW_KEY = "petcare-dashboard-view";
+    const ACTIVE = new Set(["pending", "confirmed"]);
+    let data = null;
+    let selected = null;
+
+    try { $("token").value = sessionStorage.getItem(KEY) || ""; } catch (_) {}
+    try {
+      const v = JSON.parse(localStorage.getItem(VIEW_KEY) || "{}");
+      if (v.days) $("days").value = v.days;
+      if (typeof v.showFree === "boolean") $("showFree").checked = v.showFree;
+    } catch (_) {}
+
+    const el = (tag, cls, text) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined && text !== null) n.textContent = text;
+      return n;
+    };
+    const baht = (n) => n.toLocaleString("th-TH");
+    const parseDay = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
+    const fmtLong = (iso) => parseDay(iso).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const fmtShort = (iso) => parseDay(iso).toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short" });
+    const fmtTick = (iso) => parseDay(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+    const showErr = (msg) => { $("err").textContent = msg; $("err").hidden = false; };
+    const saveView = () => { try { localStorage.setItem(VIEW_KEY, JSON.stringify({ days: $("days").value, showFree: $("showFree").checked })); } catch (_) {} };
+
+    async function load() {
+      $("err").hidden = true;
+      try { sessionStorage.setItem(KEY, $("token").value); } catch (_) {}
+      saveView();
+      const qs = new URLSearchParams({ days: $("days").value });
+      if ($("start").value) qs.set("start", $("start").value);
+      try {
+        const res = await fetch(`/api/admin/dashboard?${qs}`, { headers: { "X-Admin-Token": $("token").value } });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.detail?.message || `HTTP ${res.status}`);
+        data = body;
+        if (!$("start").value) $("start").value = data.range.start;
+        const inRange = data.days.some((d) => d.date === selected);
+        if (!inRange) selected = data.days.some((d) => d.date === data.today) ? data.today : data.range.start;
+        render();
+        $("content").hidden = false;
+        $("updated").textContent = `อัปเดตล่าสุด ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.`;
+      } catch (e) {
+        showErr(e.message);
+        $("content").hidden = true;
+      }
+    }
+
+    function render() {
+      renderKpis();
+      renderChart();
+      renderServices();
+      renderDays();
+      renderSchedule();
+    }
+
+    function kpi(label, value, note, dotColor) {
+      const box = el("div", "card kpi");
+      const l = el("div", "label");
+      if (dotColor) { const d = el("span", "dot"); d.style.background = dotColor; l.appendChild(d); }
+      l.appendChild(document.createTextNode(label));
+      box.append(l, el("div", "value", value));
+      if (note) box.appendChild(el("div", "note", note));
+      return box;
+    }
+
+    function renderKpis() {
+      const s = data.summary, b = s.by_status, all = data.all_time;
+      const allTotal = Object.values(all).reduce((a, n) => a + n, 0);
+      const range = `${fmtTick(data.range.start)} – ${fmtTick(data.range.end)}`;
+      const box = $("kpis");
+      box.replaceChildren(
+        kpi("คำขอในช่วงนี้", s.total, `${range} · ทั้งระบบ ${allTotal} คำขอ`),
+        kpi("รอพนักงานยืนยัน", b.pending, `ทั้งระบบรออยู่ ${all.pending} คำขอ`, "#e0a400"),
+        kpi("ยืนยันแล้ว", b.confirmed, null, "var(--mint-deep)"),
+        kpi("ยกเลิก / ปฏิเสธ", b.cancelled + b.rejected, `ยกเลิก ${b.cancelled} · ปฏิเสธ ${b.rejected}`, "var(--danger)"),
+        kpi("ยอดประมาณการ (บาท)", baht(s.estimated_revenue), "เฉพาะคำขอที่รอยืนยันหรือยืนยันแล้ว"),
+        kpi("วันที่คิวแน่นที่สุด", s.busiest_day ? fmtShort(s.busiest_day) : "–",
+            s.busiest_day ? `${data.days.find((d) => d.date === s.busiest_day).active} คิว` : "ยังไม่มีคิวในช่วงนี้"),
+      );
+    }
+
+    function renderChart() {
+      const chart = $("chart"), xl = $("xlabels");
+      chart.replaceChildren(); xl.replaceChildren();
+      const max = Math.max(1, ...data.days.map((d) => d.active));
+      const tip = el("div", "tip"); tip.hidden = true;
+      const many = data.days.length > 14;
+      data.days.forEach((d, i) => {
+        const col = el("div", "col" + (d.date === selected ? " sel" : ""));
+        col.tabIndex = 0;
+        col.setAttribute("role", "button");
+        col.setAttribute("aria-label", `${fmtLong(d.date)} ${d.active} คิว`);
+        if (d.active && !many) col.appendChild(el("span", "num", d.active));
+        const fill = el("div", "fill");
+        fill.style.height = `${(d.active / max) * 82}%`;
+        col.appendChild(fill);
+        const pick = () => { selected = d.date; render(); $("schedTitle").scrollIntoView({ behavior: "smooth", block: "start" }); };
+        col.addEventListener("click", pick);
+        col.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+        col.addEventListener("mouseenter", () => {
+          const b = d.by_status;
+          tip.textContent = `${fmtShort(d.date)} · รอ ${b.pending} · ยืนยัน ${b.confirmed} · ยกเลิก/ปฏิเสธ ${b.cancelled + b.rejected}`;
+          tip.hidden = false;
+          const cr = chart.getBoundingClientRect(), r = col.getBoundingClientRect();
+          const x = Math.min(Math.max(r.left - cr.left + r.width / 2, 110), cr.width - 110);
+          tip.style.left = `${x}px`;
+          tip.style.top = `${Math.max(fill.offsetTop - 6, 30)}px`;
+        });
+        col.addEventListener("mouseleave", () => { tip.hidden = true; });
+        chart.appendChild(col);
+        const lab = el("span", d.date === data.today ? "today" : "", many && i % 3 ? "" : fmtTick(d.date));
+        xl.appendChild(lab);
+      });
+      chart.appendChild(tip);
+    }
+
+    function renderServices() {
+      const box = $("services");
+      box.replaceChildren();
+      if (!data.services.length) { box.appendChild(el("div", "empty", "ยังไม่มีคิวในช่วงนี้")); return; }
+      const max = data.services[0].count;
+      const list = el("div", "svc");
+      data.services.slice(0, 8).forEach((s) => {
+        list.append(el("span", null, `${s.id} · ${s.name}`), el("b", null, `${s.count}`));
+        const track = el("div", "track"), bar = el("i");
+        bar.style.width = `${(s.count / max) * 100}%`;
+        track.appendChild(bar);
+        list.appendChild(track);
+      });
+      box.appendChild(list);
+    }
+
+    function renderDays() {
+      const body = $("daysBody");
+      body.replaceChildren();
+      const statusOf = Object.fromEntries(data.bookings.map((b) => [b.booking_id, b.status]));
+      data.days.forEach((d) => {
+        const tr = el("tr", "day" + (d.date === selected ? " sel" : "") + (d.count ? "" : " empty"));
+        const b = d.by_status;
+        const dateCell = el("td", null, fmtShort(d.date) + (d.date === data.today ? " (วันนี้)" : ""));
+        dateCell.style.whiteSpace = "nowrap";
+        if (d.date === data.today) dateCell.style.fontWeight = "600";
+        tr.append(dateCell, el("td", "n", d.count), el("td", "n", b.pending), el("td", "n", b.confirmed), el("td", "n", b.cancelled + b.rejected));
+        const idCell = el("td");
+        if (d.booking_ids.length) {
+          const wrap = el("div", "ids");
+          d.booking_ids.forEach((id) => {
+            const chip = el("button", `chip ${statusOf[id]}`, id);
+            chip.type = "button";
+            chip.title = data.status_labels[statusOf[id]];
+            chip.addEventListener("click", (e) => { e.stopPropagation(); selected = d.date; render(); focusBooking(id); });
+            wrap.appendChild(chip);
+          });
+          idCell.appendChild(wrap);
+        } else {
+          idCell.appendChild(el("span", "muted", "–"));
+        }
+        tr.appendChild(idCell);
+        tr.addEventListener("click", () => { selected = d.date; render(); });
+        body.appendChild(tr);
+      });
+    }
+
+    function renderSchedule() {
+      const day = data.days.find((d) => d.date === selected);
+      $("schedTitle").textContent = `ตารางนัดหมาย · ${fmtLong(selected)} (${day.active} คิว)`;
+      const body = $("schedBody");
+      body.replaceChildren();
+      const items = data.bookings.filter((b) => b.date === selected);
+      const showFree = $("showFree").checked;
+      const slots = [...new Set([...data.time_slots, ...items.map((b) => b.time)])].sort();
+      let rows = 0;
+      slots.forEach((t) => {
+        const at = items.filter((b) => b.time === t);
+        if (!at.length) {
+          if (!showFree) return;
+          const tr = el("tr", "free");
+          tr.append(el("td", "time", t), Object.assign(el("td", null, "ว่าง"), { colSpan: 7 }));
+          body.appendChild(tr); rows++;
+          return;
+        }
+        at.forEach((b, i) => {
+          const tr = el("tr");
+          tr.dataset.id = b.booking_id;
+          const cell = (label, text, cls) => { const td = el("td", cls, text); td.dataset.label = label; tr.appendChild(td); return td; };
+          const tc = cell("เวลา", i === 0 ? t : "", "time");
+          if (i > 0) tc.removeAttribute("data-label");
+          cell("หมายเลข", b.booking_id).style.cssText = "white-space:nowrap;font-family:ui-monospace,Consolas,monospace";
+          cell("สัตว์เลี้ยง", [b.pet_type, b.pet_name, b.weight_kg ? `${b.weight_kg} กก.` : "", b.cat_size ? `ไซซ์${b.cat_size}` : "", b.coat_length].filter(Boolean).join(" · "));
+          cell("บริการ", b.services.map((s) => `${s.id} ${s.name}`).join(", "));
+          cell("ราคาประมาณ", `${baht(b.estimated_total)} ฿`, "n");
+          cell("ผู้ติดต่อ", `${b.contact_name} · ${b.contact}`);
+          cell("หมายเหตุ", [b.note, b.staff_note ? `ร้าน: ${b.staff_note}` : ""].filter(Boolean).join(" / ") || "–");
+          cell("สถานะ", "").appendChild(el("span", `pill ${b.status}`, b.status_label));
+          body.appendChild(tr); rows++;
+        });
+      });
+      if (!rows) {
+        const tr = el("tr");
+        tr.appendChild(Object.assign(el("td", "empty", "ไม่มีคิวในวันนี้"), { colSpan: 8 }));
+        body.appendChild(tr);
+      }
+    }
+
+    function focusBooking(id) {
+      const row = document.querySelector(`#schedBody tr[data-id="${CSS.escape(id)}"]`);
+      if (!row) return;
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+    }
+
+    $("bar").addEventListener("submit", (e) => { e.preventDefault(); load(); });
+    $("days").addEventListener("change", () => { if ($("token").value) load(); });
+    $("start").addEventListener("change", () => { if ($("token").value) load(); });
+    $("todayBtn").addEventListener("click", () => { $("start").value = ""; selected = null; if ($("token").value) load(); });
+    $("showFree").addEventListener("change", () => { saveView(); if (data) renderSchedule(); });
+
+    if ($("token").value) load();
+    // keep the numbers fresh while the page is open
+    setInterval(() => { if (data && !document.hidden) load(); }, 60000);
+  })();
+  </script>
+</body>
+</html>

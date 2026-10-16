@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor C as ลูกค้า
+    participant W as Web UI (แบบฟอร์มจองคิว)
+    participant A as routes/booking.py
+    participant K as Knowledge Base
+    participant D as Booking DB (SQLite)
+    actor S as พนักงาน (/admin)
+
+    C->>W: กด "จองคิว" กรอกสัตว์เลี้ยง น้ำหนัก บริการ วันเวลา ช่องทางติดต่อ
+    W->>A: GET /api/booking-options
+    A->>K: เวลาเปิด-ปิด, ราคา, เงื่อนไขน้ำหนัก, นโยบายยกเลิก
+    A-->>W: ตัวเลือกบริการและช่วงเวลาที่จองได้
+    W->>A: POST /api/bookings
+    A->>K: ตรวจรหัสบริการ ชนิดสัตว์ น้ำหนัก เวลาเปิด วันที่ไม่ผ่านไปแล้ว
+    alt ข้อมูลไม่ผ่าน
+        A-->>W: 422 รายการที่ต้องแก้ + บริการที่ตรงน้ำหนัก
+    else ผ่าน
+        A->>D: บันทึก status = pending
+        A-->>W: 201 หมายเลข PET-BOOK-ววดดปปปปnn · "รอพนักงานยืนยัน"
+    end
+    S->>A: GET /api/admin/bookings (X-Admin-Token)
+    A->>D: รายการรอยืนยัน
+    S->>A: POST /api/admin/bookings/{id}/status (confirmed / rejected + ข้อความ)
+    A->>D: อัปเดตสถานะ
+    C->>W: "ตรวจสถานะ" กรอกหมายเลข + เบอร์/LINE
+    W->>A: GET /api/bookings/{id}?contact=...
+    A->>D: อ่านเฉพาะเมื่อช่องทางติดต่อตรงกัน
+    A-->>W: สถานะ + ข้อความจากร้าน (ไม่ตรง = 404 เหมือนไม่มีคำขอ)
+    opt ยกเลิก
+        W->>A: POST /api/bookings/{id}/cancel
+        A->>K: ต้องเหลือเวลาไม่น้อยกว่า 3 ชั่วโมงก่อนนัด
+        A-->>W: ยกเลิกแล้ว หรือ 409 ให้ติดต่อพนักงาน
+    end
