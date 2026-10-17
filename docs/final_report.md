@@ -11,6 +11,8 @@
 | ชื่อโครงงาน | PetCare Buddy: Intelligent Chatbot for Pet Grooming Services |
 | ธุรกิจ | PetCare Grooming (ธุรกิจสมมติ) |
 | ผู้พัฒนา | 67076006 กาญจนา น้อยหมอ · 68076035 นลินี อัสแสง (งานคู่) |
+| ระบบที่ใช้งานได้จริง | https://petcare-buddy-xi.vercel.app (หน้าร้าน: /static/PetCare_main.html) |
+| ซอร์สโค้ด (เปิดเผย) | https://github.com/kanchananmr-glitch/petcare-buddy |
 
 ## 2. ความเป็นมาของธุรกิจ
 
@@ -219,14 +221,18 @@ System prompt (`app/prompts.py`) ประกอบด้วย (1) บทบา
 
 ทีมต้องยืนยันคอลัมน์สถานะให้ตรงกับงานที่แต่ละคนทำจริงก่อนส่ง ทั้งสองคนต้องอธิบายได้ทุกส่วนของระบบ
 
-| ผู้พัฒนา | หน้าที่ | หลักฐาน | สถานะ |
-|---|---|---|---|
-| กาญจนา น้อยหมอ | Backend, API, การวิเคราะห์รูป, แผนภาพสถาปัตยกรรม | `app/main.py`, `app/routes/`, `app/vision_checks.py`, `docs/diagrams/` | รอยืนยันโดยทีม |
-| นลินี อัสแสง | Frontend, RAG, Prompt, ความปลอดภัย | `app/static/`, `app/rag/`, `app/prompts.py`, `app/safety/` | รอยืนยันโดยทีม |
-| ทั้งสองคน | ระบบจองคิวและคิวว่าง, ประเมินราคาแมว, หน้าร้านและ Dashboard | `app/booking.py`, `app/cat_estimate.py`, `tests/test_availability.py` | ส่งมอบแล้ว |
-| ทีม (รอยืนยันผู้รับผิดชอบ) | นำขึ้น Cloud (Docker, Render, Vercel) | `Dockerfile`, `render.yaml`, `DEPLOY_RENDER.md` | ส่งมอบแล้ว |
-| ทั้งสองคน | ทดสอบ A/B/C และกฎ 16 ข้อ, รายงาน, คลิปสาธิต | `scripts/run_eval.py`, `docs/` | ทดสอบครบ 16 ต.ค.; คลิปยังไม่บันทึก |
-| ทั้งสองคน | ตรวจงานสลับกัน | `docs/peer_review.md` | ยังไม่ดำเนินการ |
+| ใคร | ทำอะไร | ได้อะไร (ผลงาน) | หลักฐาน | สถานะ |
+|---|---|---|---|---|
+| กาญจนา น้อยหมอ | Backend และ REST API | FastAPI app, API 20 endpoints, รูปแบบ error ภาษาไทย | `app/main.py`, `app/routes/`, `tests/test_api.py` | รอยืนยันโดยทีม |
+| กาญจนา น้อยหมอ | การวิเคราะห์รูปภาพ (Vision) | ตรวจไฟล์รูป, เรียก vision model, ตรวจผลด้วยโค้ด (อ่านซ้ำ เทียบราคา คำสั่งแฝง) | `app/routes/vision.py`, `app/vision_checks.py`, `tests/test_vision.py` | รอยืนยันโดยทีม |
+| กาญจนา น้อยหมอ | แผนภาพสถาปัตยกรรมและการไหลของข้อมูล | แผนภาพ 3 ชุด (สถาปัตยกรรม การไหลของข้อมูล ขั้นตอนจองคิว) | `docs/diagrams/` | รอยืนยันโดยทีม |
+| นลินี อัสแสง | Frontend และ UI | หน้าแชท responsive พร้อมสถานะกำลังประมวลผลและแถบ error | `app/static/`, `docs/screenshots/` | รอยืนยันโดยทีม |
+| นลินี อัสแสง | RAG | คลังความรู้ 40 chunk, embeddings, FAISS retriever | `app/rag/`, `tests/test_rag.py` | รอยืนยันโดยทีม |
+| นลินี อัสแสง | Prompt และความปลอดภัย | system prompt, กฎต้องทำ 9 / ห้ามทำ 7, input และ output guard | `app/prompts.py`, `data/chatbot_rules.json`, `app/safety/` | รอยืนยันโดยทีม |
+| ทั้งสองคน | ระบบจองคิว คิวว่าง หน้าร้าน Dashboard และประเมินราคาแมว | API จองคิว, หน้าพนักงาน, ตารางคิว 7 วัน, Dashboard, ตารางราคาแมว | `app/booking.py`, `app/cat_estimate.py`, `app/static/` | ส่งมอบแล้ว |
+| ทั้งสองคน | ทดสอบและนำขึ้น Cloud | ผลทดสอบ A/B/C และกฎ 16 ข้อ, Docker, ระบบบน Vercel/Render | `scripts/run_eval.py`, `docs/test_results.md`, `Dockerfile` | ส่งมอบแล้ว |
+| ทั้งสองคน | รายงาน สไลด์ และคลิปสาธิต | รายงานนี้, สไลด์นำเสนอ, คลิปไม่เกิน 4 นาที | `docs/final_report.md`, `docs/demo_script.md` | คลิปยังไม่บันทึก |
+| ทั้งสองคน | ตรวจงานสลับกัน | นลินีตรวจ Backend/API/Vision ของกาญจนา และกาญจนาตรวจ UI/RAG/ความปลอดภัยของนลินี พร้อมซ้อมตอบคำถามรายบุคคล | แบบฟอร์ม Peer Review ในโฟลเดอร์ Google Drive | ยังไม่ดำเนินการ |
 
 ## 17. บันทึกความก้าวหน้าการพัฒนา
 
